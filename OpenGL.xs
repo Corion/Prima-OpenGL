@@ -7,7 +7,11 @@
 #include <Icon.h>
 #include <Application.h>
 #include <Printer.h>
+#ifdef __OSX__
+#include <OpenGL/gl.h>
+#else
 #include <GL/gl.h>
+#endif
 #include "prima_gl.h"
 
 PWidget_vmt CWidget;

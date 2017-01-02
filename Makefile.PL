@@ -15,6 +15,11 @@ if (
 	push @libs, '-L/lib/w32api' if $^O eq 'cygwin';
 	push @libs, '-lopengl32 -lgdi32 -lmsimg32';
 	push @obj,  'win32.o';
+} elsif (
+	$^O eq 'darwin'
+	push @libs, '-framework OpenGL';
+    # Likely, we also need to change the include directory
+) {
 } else {
 	push @libs, '-lGL';
 	push @obj,  'x11.o';
