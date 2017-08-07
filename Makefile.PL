@@ -8,18 +8,18 @@ use Prima::Config;
 my @libs;
 my @obj  = ('OpenGL.o');
 
-if ( 
-	$^O eq 'MSWin32' or 
+if (
+	$^O eq 'MSWin32' or
 	( $^O eq 'cygwin' and $Prima::Config::Config{platform} eq 'win32')
 ) {
 	push @libs, '-L/lib/w32api' if $^O eq 'cygwin';
-	push @libs, '-lopengl32 -lgdi32 -lmsimg32';
+	push @libs, '-lopengl32 -lgdi32 -lmsimg32 -ldwmapi';
 	push @obj,  'win32.o';
 } elsif (
 	$^O eq 'darwin'
+) {
 	push @libs, '-framework OpenGL';
     # Likely, we also need to change the include directory
-) {
 } else {
 	push @libs, '-lGL';
 	push @obj,  'x11.o';
@@ -49,5 +49,5 @@ WriteMakefile(
 			repository => 'http://github.com/dk/Prima-OpenGL',
 		},
 	},
-	
+
 );

@@ -2,6 +2,7 @@
 #include "perl.h"
 #include "XSUB.h"
 #include <GL/gl.h>
+#include <dwmapi.h>
 #include <win32/win32guts.h>
 #include "prima_gl.h"
 #include <Component.h>
@@ -145,12 +146,11 @@ gl_context_create( Handle object, GLRequest * request)
 	CLEAR_ERROR;
 
 	ret = NULL;
-	
+
 	memset(&pfd, 0, sizeof(pfd));
 	pfd.nSize        = sizeof(pfd);
 	pfd.nVersion     = 1;
-	pfd.dwFlags      = PFD_SUPPORT_OPENGL;
-
+	pfd.dwFlags      = PFD_SUPPORT_OPENGL | PFD_DRAW_TO_WINDOW | PFD_SUPPORT_COMPOSITION;
 	switch ( request-> target ) {
 	case GLREQ_TARGET_BITMAP:
 	case GLREQ_TARGET_IMAGE:
@@ -166,6 +166,7 @@ gl_context_create( Handle object, GLRequest * request)
 	case GLREQ_TARGET_WINDOW:
 		glbm = 0;
 		if ( apc_widget_surface_is_layered( object )) {
+            printf("Layered GL surface\n");
         		const WCHAR wnull = 0;
 			wnd = CreateWindowExW(
 				WS_EX_TOOLWINDOW, L"Generic", &wnull,
@@ -180,35 +181,53 @@ gl_context_create( Handle object, GLRequest * request)
 			layered = true;
 		} else {
 			wnd = (HWND) var-> handle;
+            printf("Own HWND window for GL surface %08x\n", wnd);
 			layered = false;
 		}
+
+    DWM_BLURBEHIND   test;
+    HBRUSH bg = (HBRUSH)CreateSolidBrush(0x00000000);
+    SetClassLongPtr(wnd, GCLP_HBRBACKGROUND, (LONG)bg);
+    HRGN hRgn = CreateRectRgn(0, 0, -1, -1);
+    memset( &test, sizeof(test),0);
+    test.dwFlags = DWM_BB_ENABLE | DWM_BB_BLURREGION;
+    test.fEnable = true;
+    test.hRgnBlur = hRgn;
+    printf("Making hWnd %08x transparent\n", wnd);
+    DwmEnableBlurBehindWindow(wnd, &test);
+
 		dc  = GetDC( wnd );
-		pfd.dwFlags |= PFD_DRAW_TO_WINDOW;
+		pfd.dwFlags |= PFD_DRAW_TO_WINDOW | PFD_SUPPORT_COMPOSITION;
 		break;
 	case GLREQ_TARGET_APPLICATION:
+    printf("Application\n");
 		glbm = 0;
 		wnd  = 0;
 		dc   = GetDC( 0 );
-		pfd.dwFlags |= PFD_DRAW_TO_WINDOW | PFD_SUPPORT_GDI;
+		pfd.dwFlags |= PFD_DRAW_TO_WINDOW | PFD_SUPPORT_GDI | PFD_SUPPORT_COMPOSITION;
 		layered = false;
 		break;
 	}
-	
+	/*
 	if ( request-> layer > 0)
 		pfd.iLayerType = PFD_OVERLAY_PLANE;
 	else if ( request-> layer < 0)
 		pfd.iLayerType = PFD_UNDERLAY_PLANE;
-	
+	*/
 	switch ( request-> pixels ) {
 	case GLREQ_PIXEL_RGBA:
+    printf("RGBA\n");
 		pfd.iPixelType = PFD_TYPE_RGBA;
 		break;
 	case GLREQ_PIXEL_PALETTE:
+    printf("Palette?\n");
 		pfd.iLayerType = PFD_TYPE_COLORINDEX;
 		break;
 	}
-	
+    printf("Pixels: %d\n", request-> pixels);
+
 	if ( request-> double_buffer == GLREQ_TRUE) {
+    printf("Double-buffer\n");
           	pfd.dwFlags |= PFD_DOUBLEBUFFER;
 	  	pfd.dwFlags &= ~PFD_SUPPORT_GDI;
 	}
@@ -220,7 +239,7 @@ gl_context_create( Handle object, GLRequest * request)
 	pfd.cRedBits        = request-> red_bits;
 	pfd.cGreenBits      = request-> green_bits;
 	pfd.cBlueBits       = request-> blue_bits;
-	pfd.cAlphaBits      = request-> alpha_bits;
+	pfd.cAlphaBits      = 8; // request-> alpha_bits;
 	pfd.cDepthBits      = request-> depth_bits;
 	pfd.cStencilBits    = request-> stencil_bits;
 	pfd.cAccumRedBits   = request-> accum_red_bits;
@@ -228,20 +247,41 @@ gl_context_create( Handle object, GLRequest * request)
 	pfd.cAccumBlueBits  = request-> accum_blue_bits;
 	pfd.cAccumAlphaBits = request-> accum_alpha_bits;
 
-	if ( pfd.cColorBits == 0) 
+	if ( pfd.cColorBits == 0)
 		pfd.cColorBits = pfd.cRedBits + pfd.cGreenBits + pfd.cBlueBits;
 	pfd.cAccumBits = pfd.cAccumRedBits + pfd.cAccumGreenBits + pfd.cAccumBlueBits + pfd.cAccumAlphaBits;
-		
+
 	pfd.cColorBits = GetDeviceCaps(dc, BITSPIXEL);
-   
+
+    pfd.dwFlags =
+      PFD_DRAW_TO_WINDOW      |         // Format Must Support Window
+      PFD_SUPPORT_OPENGL      |         // Format Must Support OpenGL
+      PFD_SUPPORT_COMPOSITION |         // Format Must Support Composition
+      PFD_DOUBLEBUFFER;                 // Must Support Double Buffering
+    pfd.iPixelType =
+      PFD_TYPE_RGBA;                    // Request An RGBA Format
+    pfd.cColorBits =  32;               // Select Our Color Depth
+      //0, 0, 0, 0, 0, 0,                 // Color Bits Ignored
+     // 8,                                // An Alpha Buffer
+    pfd.cAlphaBits =  8  ;               // Select Our Color Depth
+      //0,                                // Shift Bit Ignored
+      //0,                                // No Accumulation Buffer
+      //0, 0, 0, 0,                       // Accumulation Bits Ignored
+      //24,                               // 16Bit Z-Buffer (Depth Buffer)
+      //8,                                // Some Stencil Buffer
+      //0,                                // No Auxiliary Buffer
+      //PFD_MAIN_PLANE,                   // Main Drawing Layer
+      //0,                                // Reserved
+      //0, 0, 0                           // Layer Masks Ignored
+
 	if ( !( pf = ChoosePixelFormat(dc, &pfd))) {
 		SET_ERROR("ChoosePixelFormat");
 		return (Handle)0;
 	}
 	if ( !SetPixelFormat(dc, pf, &pfd)) {
 		SET_ERROR("SetPixelFormat");
-		/* 
-		Did you try to recreate a GL context on the same window? 
+		/*
+		Did you try to recreate a GL context on the same window?
 		Windows doesn't allow that. Source:
                 https://www.opengl.org/wiki/Platform_specifics:_Windows#How_many_times_can_I_call_SetPixelFormat.3F
 		*/
@@ -268,7 +308,7 @@ void
 gl_context_destroy( Handle context)
 {
 	CLEAR_ERROR;
-	if ( wglGetCurrentContext() == ctx-> gl) 
+	if ( wglGetCurrentContext() == ctx-> gl)
 		wglMakeCurrent( NULL, NULL);
 	wglDeleteContext( ctx-> gl );
 	if ( ctx-> bm) {
@@ -289,11 +329,12 @@ gl_context_make_current( Handle context)
 	CLEAR_ERROR;
 	if ( context ) {
 		if ( ctx-> layered ) {
+            printf("Activating layered context\n");
 			RECT r;
 			Handle object = ctx-> object;
 			GetWindowRect(( HWND ) var-> handle, &r);
-			SetWindowPos( ctx-> wnd, 
-				NULL, 0, 0, r.right-r.left, r.bottom-r.top, 
+			SetWindowPos( ctx-> wnd,
+				NULL, 0, 0, r.right-r.left, r.bottom-r.top,
 				SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
 		}
 		ret = wglMakeCurrent( ctx-> dc, ctx-> gl);
@@ -356,7 +397,7 @@ gl_flush( Handle context)
 		ret = SwapBuffers( ctx->dc );
 		if ( !ret ) SET_ERROR( "SwapBuffers");
 	}
-	
+
 	return ret;
 }
 
@@ -369,7 +410,7 @@ gl_error_string(char * buf, int len)
 	if ( !last_failed_func ) return NULL;
 
 	FormatMessage(
-		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, 
+		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
 		NULL, last_error_code,
       		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
       		( LPTSTR) &lpMsgBuf, 0, NULL
@@ -384,13 +425,13 @@ gl_error_string(char * buf, int len)
 		if ( localbuf[i] != '\xD' && localbuf[i] != '\xA' && localbuf[i] != '.')
 			break;
 		localbuf[i] = 0;
-	}		
-	
+	}
+
 	snprintf( buf, len, "%s error: %s", last_failed_func, localbuf);
 	return buf;
 }
 
-int 
+int
 gl_context_push(void)
 {
 	CLEAR_ERROR;
@@ -406,7 +447,7 @@ gl_context_push(void)
 	return 1;
 }
 
-int 
+int
 gl_context_pop(void)
 {
 	CLEAR_ERROR;
