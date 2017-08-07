@@ -166,7 +166,7 @@ gl_context_create( Handle object, GLRequest * request)
 	case GLREQ_TARGET_WINDOW:
 		glbm = 0;
 		if ( apc_widget_surface_is_layered( object )) {
-            printf("Layered GL surface\n");
+            //printf("Layered GL surface\n");
         		const WCHAR wnull = 0;
 			wnd = CreateWindowExW(
 				WS_EX_TOOLWINDOW, L"Generic", &wnull,
@@ -181,7 +181,7 @@ gl_context_create( Handle object, GLRequest * request)
 			layered = true;
 		} else {
 			wnd = (HWND) var-> handle;
-            printf("Own HWND window for GL surface %08x\n", wnd);
+            //printf("Own HWND window for GL surface %08x\n", wnd);
 			layered = false;
 		}
 
@@ -193,14 +193,14 @@ gl_context_create( Handle object, GLRequest * request)
     test.dwFlags = DWM_BB_ENABLE | DWM_BB_BLURREGION;
     test.fEnable = true;
     test.hRgnBlur = hRgn;
-    printf("Making hWnd %08x transparent\n", wnd);
+    //printf("Making hWnd %08x transparent\n", wnd);
     DwmEnableBlurBehindWindow(wnd, &test);
 
 		dc  = GetDC( wnd );
 		pfd.dwFlags |= PFD_DRAW_TO_WINDOW | PFD_SUPPORT_COMPOSITION;
 		break;
 	case GLREQ_TARGET_APPLICATION:
-    printf("Application\n");
+    //printf("Application\n");
 		glbm = 0;
 		wnd  = 0;
 		dc   = GetDC( 0 );
@@ -216,18 +216,18 @@ gl_context_create( Handle object, GLRequest * request)
 	*/
 	switch ( request-> pixels ) {
 	case GLREQ_PIXEL_RGBA:
-    printf("RGBA\n");
+    //printf("RGBA\n");
 		pfd.iPixelType = PFD_TYPE_RGBA;
 		break;
 	case GLREQ_PIXEL_PALETTE:
-    printf("Palette?\n");
+    //printf("Palette?\n");
 		pfd.iLayerType = PFD_TYPE_COLORINDEX;
 		break;
 	}
-    printf("Pixels: %d\n", request-> pixels);
+    //printf("Pixels: %d\n", request-> pixels);
 
 	if ( request-> double_buffer == GLREQ_TRUE) {
-    printf("Double-buffer\n");
+    //printf("Double-buffer\n");
           	pfd.dwFlags |= PFD_DOUBLEBUFFER;
 	  	pfd.dwFlags &= ~PFD_SUPPORT_GDI;
 	}
@@ -329,7 +329,7 @@ gl_context_make_current( Handle context)
 	CLEAR_ERROR;
 	if ( context ) {
 		if ( ctx-> layered ) {
-            printf("Activating layered context\n");
+            //printf("Activating layered context\n");
 			RECT r;
 			Handle object = ctx-> object;
 			GetWindowRect(( HWND ) var-> handle, &r);
