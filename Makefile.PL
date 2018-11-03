@@ -7,6 +7,7 @@ use Prima::Config;
 
 my @libs;
 my @obj  = ('OpenGL.o');
+my @ccflags;
 
 if ( 
 	$^O eq 'MSWin32' or 
@@ -18,7 +19,7 @@ if (
 } elsif (
 	$^O eq 'darwin'
 ) {
-	push @libs, '-framework OpenGL';
+	push @ccflags, '-framework OpenGL';
 	push @obj,  'x11.o';
     # Likely, we also need to change the include directory
 } else {
@@ -42,6 +43,7 @@ WriteMakefile(
 	ABSTRACT_FROM      => 'lib/Prima/OpenGL.pm',
 	AUTHOR             => 'Dmitry Karasik <dmitry@karasik.eu.org>',
 	LIBS               => "@libs",
+	CCFLAGS            => "$Config{ccflags} @ccflags",
 	DEFINE             => "$Prima::Config::Config{define}",
 	INC                => "$Prima::Config::Config{inc} -Iinclude",
 	OBJECT             => "@obj",
