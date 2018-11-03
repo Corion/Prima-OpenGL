@@ -19,8 +19,8 @@ if (
 } elsif (
 	$^O eq 'darwin'
 ) {
-	$DYNS = '-framework OpenGL';
-	push @obj,  'x11.o';
+    $DYNS = { 'OTHERLDFLAGS' => '-framework OpenGL' };
+    push @obj,  'x11.o';
     # Likely, we also need to change the include directory
 } else {
 	push @libs, '-lGL';
