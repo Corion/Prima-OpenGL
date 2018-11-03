@@ -19,6 +19,7 @@ if (
 	$^O eq 'darwin'
 ) {
 	push @libs, '-framework OpenGL';
+	push @obj,  'x11.o';
     # Likely, we also need to change the include directory
 } else {
 	push @libs, '-lGL';
