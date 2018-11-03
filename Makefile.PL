@@ -7,7 +7,7 @@ use Prima::Config;
 
 my @libs;
 my @obj  = ('OpenGL.o');
-my @ccflags;
+my $DYNS;
 
 if ( 
 	$^O eq 'MSWin32' or 
@@ -19,7 +19,7 @@ if (
 } elsif (
 	$^O eq 'darwin'
 ) {
-	push @ccflags, '-framework OpenGL';
+	$DYNS = '-framework OpenGL';
 	push @obj,  'x11.o';
     # Likely, we also need to change the include directory
 } else {
@@ -52,5 +52,5 @@ WriteMakefile(
 			repository => 'http://github.com/dk/Prima-OpenGL',
 		},
 	},
-	
+	$DYNS ? ( dynamic_lib => $DYNS ) : (),
 );
