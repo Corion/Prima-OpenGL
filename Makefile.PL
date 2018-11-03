@@ -43,7 +43,6 @@ WriteMakefile(
 	ABSTRACT_FROM      => 'lib/Prima/OpenGL.pm',
 	AUTHOR             => 'Dmitry Karasik <dmitry@karasik.eu.org>',
 	LIBS               => "@libs",
-	CCFLAGS            => "$Config{ccflags} @ccflags",
 	DEFINE             => "$Prima::Config::Config{define}",
 	INC                => "$Prima::Config::Config{inc} -Iinclude",
 	OBJECT             => "@obj",
