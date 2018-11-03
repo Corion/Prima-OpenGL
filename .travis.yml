@@ -30,6 +30,12 @@ matrix:
 sudo: required
 
 dist: trusty
+addons:
+  apt:
+    update: true
+    packages:
+      - libpng-dev
+      - freeglut3-dev
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export DISPLAY=:99.0; fi
@@ -37,7 +43,7 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then grep -v blank /etc/fonts/fonts.conf | sudo tee /etc/fonts/fonts.conf; fi
   - git clone git://github.com/travis-perl/helpers ~/travis-perl-helpers
   # Install perlbrew the hard way, on OSX
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew upgrade; brew install perl libpng --universal; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew upgrade; brew install perl libpng freeglut --universal; fi
   #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then pkg-config libpng --cflags; fi
   - if [[ "$TRAVIS_OS_NAME" == 'osx' ]]; then \curl -L http://install.perlbrew.pl | bash; fi
   - if [[ "$TRAVIS_OS_NAME" == 'osx' ]]; then source ~/perl5/perlbrew/etc/bashrc; fi
